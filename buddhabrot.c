@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include <limits.h>
+#include <signal.h>
 
-#define WIDTH 700
-#define HEIGHT 600
+#define WIDTH 1400
+#define HEIGHT 1200
+
+void gen_pgm(FILE *fp, unsigned scale);
+unsigned buddhabrot(unsigned long npoints, unsigned long maxiters);
+int is_mandel(double x, double y, unsigned long maxiters);
 
 /* From http://eternallyconfuzzled.com/arts/jsw_art_rand.aspx */
 unsigned time_seed() {
@@ -26,6 +31,12 @@ double rand_double() {
 
 /* [-2,1.5]x[-1.5,1.5] maps to [0,WIDTH-1]x[0,HEIGHT-1] */
 unsigned pxval[WIDTH][HEIGHT] = {{0}};
+volatile int draw_pic = 0;
+
+void sig_draw_pic(int signum) {
+	draw_pic = 1;
+}
+
 
 int is_mandel(double x, double y, unsigned long maxiters) {
 	double zx = 0,
@@ -70,6 +81,15 @@ unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
 			zxsq = zx*zx;
 			zysq = zy*zy;
 		}
+		if (draw_pic) {
+			printf("%lu\n", npoints);
+			FILE *tmp = fopen("tmp.pgm", "w+");
+			if (tmp) {
+				gen_pgm(tmp, maxval);
+				fclose(tmp);
+			}
+			draw_pic = 0;
+		}
 	}
 	return maxval;
 }
@@ -94,6 +114,8 @@ int main(int argc, char *argv[]) {
 	unsigned maxval;
 	FILE *pgmfil = NULL;
 
+	signal(SIGUSR1, sig_draw_pic);
+
 	if (argc > 1) {
 		pgmfil = fopen(argv[1], "w");
 		if (pgmfil == NULL) {
@@ -103,7 +125,7 @@ int main(int argc, char *argv[]) {
 	if (pgmfil == NULL)
 		pgmfil = stdout;
 
-	maxval = buddhabrot(10000000UL, 1000LU);
+	maxval = buddhabrot(10000000000UL, 20000LU);
 
 	gen_pgm(pgmfil, maxval);
 
