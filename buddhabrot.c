@@ -24,7 +24,7 @@ double rand_double() {
 	return rand() / (RAND_MAX + 1.0) * 4.0 - 2.0;
 }
 
-/* [-2,2]x[-1,2] maps to [0,WIDTH-1]x[0,HEIGHT-1] */
+/* [-2,1.5]x[-1.5,1.5] maps to [0,WIDTH-1]x[0,HEIGHT-1] */
 unsigned pxval[WIDTH][HEIGHT] = {{0}};
 
 int is_mandel(double x, double y, unsigned long maxiters) {
