@@ -4,8 +4,8 @@
 #include <limits.h>
 #include <signal.h>
 
-#define WIDTH 1400
-#define HEIGHT 1200
+#define WIDTH 2100
+#define HEIGHT 1800
 
 void gen_pgm(FILE *fp, unsigned scale);
 unsigned buddhabrot(unsigned long npoints, unsigned long maxiters);
@@ -82,7 +82,7 @@ unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
 			zysq = zy*zy;
 		}
 		if (draw_pic) {
-			printf("%lu\n", npoints);
+			printf("points left = %lu\n", npoints);
 			FILE *tmp = fopen("tmp.pgm", "w+");
 			if (tmp) {
 				gen_pgm(tmp, maxval);
@@ -97,13 +97,17 @@ unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
 void gen_pgm(FILE *fp, unsigned scale) {
 	size_t row,
 	       col;
+	printf("scale = %u\n", scale);
 	fprintf(fp, "P2\n"); /* magic */
 	fprintf(fp, "%d %d\n", WIDTH, HEIGHT); /* width height */
 	fprintf(fp, "255\n"); /* maximum value */
 
 	for (col = HEIGHT; col > 0; --col) {
 		for (row = 0; row < WIDTH; ++row) {
-			fprintf(fp, "%d ", (int)(pxval[row][col-1] * 255.0 / scale));
+			unsigned toprint = pxval[row][col-1] * 512 / scale;
+			if (toprint > 255) toprint = 255;
+			fprintf(fp, "%u ", toprint);
+/*			fprintf(fp, "%u ", (unsigned)(pxval[row][col-1] * 255.0 / scale));*/
 		}
 		fputc('\n', fp);
 	}
@@ -125,7 +129,7 @@ int main(int argc, char *argv[]) {
 	if (pgmfil == NULL)
 		pgmfil = stdout;
 
-	maxval = buddhabrot(10000000000UL, 20000LU);
+	maxval = buddhabrot(100000000UL, 20000LU);
 
 	gen_pgm(pgmfil, maxval);
 
