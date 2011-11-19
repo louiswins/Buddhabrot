@@ -4,8 +4,8 @@
 #include <limits.h>
 #include <signal.h>
 
-#define WIDTH 1400
-#define HEIGHT 1200
+#define WIDTH 3000
+#define HEIGHT 2500
 
 void gen_pgm(FILE *fp, unsigned *pxarr, unsigned scale);
 unsigned buddhabrot(unsigned *pxarr, unsigned long npoints, unsigned long maxiters);
@@ -66,8 +66,8 @@ unsigned buddhabrot(unsigned *pxarr, unsigned long npoints, unsigned long maxite
 		zysq = zy*zy;
 
 		while (-2.0 < zx && zx < 2.0 && -2.0 < zy && zy < 2.0) {
-			size_t pixel_x = (zx + 2.0) * WIDTH / 3.5,
-			       pixel_y = (zy + 1.5) * HEIGHT / 3.0;
+			size_t pixel_x = (zx + 2.0) * WIDTH / 3.0,
+			       pixel_y = (zy + 1.25) * HEIGHT / 2.5;
 			if (0 <= pixel_x && pixel_x < WIDTH &&
 			    0 <= pixel_y && pixel_y < HEIGHT) {
 				unsigned tmp = pxarr[pixel_x*HEIGHT + pixel_y] + 1;
@@ -115,6 +115,8 @@ void gen_pgm(FILE *fp, unsigned *pxarr, unsigned scale) {
 int main(int argc, char *argv[]) {
 	unsigned maxval;
 	FILE *pgmfil = NULL;
+	unsigned long npoints,
+		      maxiter;
 	unsigned *pxarr = malloc(WIDTH * HEIGHT * sizeof(*pxarr));
 
 	if (pxarr == NULL) {
@@ -126,15 +128,27 @@ int main(int argc, char *argv[]) {
 	signal(SIGUSR1, sig_draw_pic);
 
 	if (argc > 1) {
-		pgmfil = fopen(argv[1], "w");
+		npoints = strtoul(argv[1], NULL, 0);
+		if (npoints == 0) npoints = 1000000000UL;
+	} else {
+		npoints = 1000000000UL;
+	}
+	if (argc > 2) {
+		maxiter = strtoul(argv[2], NULL, 0);
+		if (maxiter == 0) maxiter = 2000UL;
+	} else {
+		maxiter = 2000UL;
+	}
+	if (argc > 3) {
+		pgmfil = fopen(argv[3], "w");
 		if (pgmfil == NULL) {
-			fprintf(stderr, "Could not open %s.\n", argv[1]);
+			fprintf(stderr, "Could not open %s.\n", argv[3]);
 		}
 	}
 	if (pgmfil == NULL)
 		pgmfil = stdout;
 
-	maxval = buddhabrot(pxarr, 50000000UL, 20000UL);
+	maxval = buddhabrot(pxarr, npoints, maxiter);
 
 	gen_pgm(pgmfil, pxarr, maxval);
 
