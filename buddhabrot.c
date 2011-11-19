@@ -4,11 +4,11 @@
 #include <limits.h>
 #include <signal.h>
 
-#define WIDTH 2100
-#define HEIGHT 1800
+#define WIDTH 1400
+#define HEIGHT 1200
 
-void gen_pgm(FILE *fp, unsigned scale);
-unsigned buddhabrot(unsigned long npoints, unsigned long maxiters);
+void gen_pgm(FILE *fp, unsigned *pxarr, unsigned scale);
+unsigned buddhabrot(unsigned *pxarr, unsigned long npoints, unsigned long maxiters);
 int is_mandel(double x, double y, unsigned long maxiters);
 
 /* From http://eternallyconfuzzled.com/arts/jsw_art_rand.aspx */
@@ -29,8 +29,6 @@ double rand_double() {
 	return rand() / (RAND_MAX + 1.0) * 4.0 - 2.0;
 }
 
-/* [-2,1.5]x[-1.5,1.5] maps to [0,WIDTH-1]x[0,HEIGHT-1] */
-unsigned pxval[WIDTH][HEIGHT] = {{0}};
 volatile int draw_pic = 0;
 
 void sig_draw_pic(int signum) {
@@ -52,7 +50,7 @@ int is_mandel(double x, double y, unsigned long maxiters) {
 	return 1;
 }
 
-unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
+unsigned buddhabrot(unsigned *pxarr, unsigned long npoints, unsigned long maxiters) {
 	unsigned maxval = 0;
 	while (--npoints > 0) {
 		double cx, cy,
@@ -72,8 +70,8 @@ unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
 			       pixel_y = (zy + 1.5) * HEIGHT / 3.0;
 			if (0 <= pixel_x && pixel_x < WIDTH &&
 			    0 <= pixel_y && pixel_y < HEIGHT) {
-				unsigned tmp = pxval[pixel_x][pixel_y] + 1;
-				pxval[pixel_x][pixel_y] = tmp;
+				unsigned tmp = pxarr[pixel_x*HEIGHT + pixel_y] + 1;
+				pxarr[pixel_x*HEIGHT + pixel_y] = tmp;
 				if (tmp > maxval) maxval = tmp;
 			}
 			zy = 2*zx*zy + cy;
@@ -85,7 +83,7 @@ unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
 			printf("points left = %lu\n", npoints);
 			FILE *tmp = fopen("tmp.pgm", "w+");
 			if (tmp) {
-				gen_pgm(tmp, maxval);
+				gen_pgm(tmp, pxarr, maxval);
 				fclose(tmp);
 			}
 			draw_pic = 0;
@@ -94,7 +92,7 @@ unsigned buddhabrot(unsigned long npoints, unsigned long maxiters) {
 	return maxval;
 }
 
-void gen_pgm(FILE *fp, unsigned scale) {
+void gen_pgm(FILE *fp, unsigned *pxarr, unsigned scale) {
 	size_t row,
 	       col;
 	printf("scale = %u\n", scale);
@@ -104,7 +102,7 @@ void gen_pgm(FILE *fp, unsigned scale) {
 
 	for (col = HEIGHT; col > 0; --col) {
 		for (row = 0; row < WIDTH; ++row) {
-			unsigned toprint = pxval[row][col-1] * 512 / scale;
+			unsigned toprint = pxarr[row*HEIGHT + col-1] * 512 / scale;
 			if (toprint > 255) toprint = 255;
 			fprintf(fp, "%u ", toprint);
 /*			fprintf(fp, "%u ", (unsigned)(pxval[row][col-1] * 255.0 / scale));*/
@@ -117,7 +115,14 @@ void gen_pgm(FILE *fp, unsigned scale) {
 int main(int argc, char *argv[]) {
 	unsigned maxval;
 	FILE *pgmfil = NULL;
+	unsigned *pxarr = malloc(WIDTH * HEIGHT * sizeof(*pxarr));
 
+	if (pxarr == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	srand(time_seed());
 	signal(SIGUSR1, sig_draw_pic);
 
 	if (argc > 1) {
@@ -129,9 +134,12 @@ int main(int argc, char *argv[]) {
 	if (pgmfil == NULL)
 		pgmfil = stdout;
 
-	maxval = buddhabrot(100000000UL, 20000LU);
+	maxval = buddhabrot(pxarr, 50000000UL, 20000UL);
 
-	gen_pgm(pgmfil, maxval);
+	gen_pgm(pgmfil, pxarr, maxval);
 
+	free(pxarr);
 	fclose(pgmfil);
+
+	return 0;
 }
