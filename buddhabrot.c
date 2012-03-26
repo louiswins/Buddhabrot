@@ -80,8 +80,8 @@ unsigned buddhabrot(unsigned *pxarr, unsigned long npoints, unsigned long maxite
 			zysq = zy*zy;
 		}
 		if (draw_pic) {
-			printf("points left = %lu\n", npoints);
 			FILE *tmp = fopen("tmp.pgm", "w+");
+			fprintf(stderr, "points left = %lu\n", npoints);
 			if (tmp) {
 				gen_pgm(tmp, pxarr, maxval);
 				fclose(tmp);
@@ -95,7 +95,7 @@ unsigned buddhabrot(unsigned *pxarr, unsigned long npoints, unsigned long maxite
 void gen_pgm(FILE *fp, unsigned *pxarr, unsigned scale) {
 	size_t row,
 	       col;
-	printf("scale = %u\n", scale);
+	fprintf(stderr, "scale = %u\n", scale);
 	fprintf(fp, "P2\n"); /* magic */
 	fprintf(fp, "%d %d\n", WIDTH, HEIGHT); /* width height */
 	fprintf(fp, "255\n"); /* maximum value */
